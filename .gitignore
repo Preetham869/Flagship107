@@ -68,6 +68,9 @@ temp/
 # AI models cache
 models/cache/
 .ollama/
+*.pt
+*.onnx
+*.engine
 
 # Docker
 *.log

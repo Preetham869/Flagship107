@@ -1,45 +1,51 @@
-# Flagship 107 - Quick Start Guide
+﻿# Flagship 107 - Quick Start Guide
 
-Get up and running in 5 minutes.
+Get up and running in under 10 minutes.
 
 ## Prerequisites
 
-✅ Python 3.10+  
-✅ Node.js 18+  
-✅ Git  
+âœ… Python 3.10+  
+âœ… Node.js 18+  
+âœ… Git  
+âœ… Ollama (optional â€” for AI explanations)  
 
-## Step 1: Clone & Setup (If not already done)
+## Step 1: Clone Repository
 
 ```bash
-cd c:\Users\preet\OneDrive\Projects\Flagship107
+git clone <repo-url>
+cd Flagship107
 ```
-
-Project structure is already created. You're ready to go!
 
 ## Step 2: Backend Setup
 
+> **Important:** The backend imports `processing/` from the project root.  
+> You must run it from the project root using the provided scripts.
+
 ```bash
-# Navigate to backend
-cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+# Install backend dependencies (from project root)
+pip install -r backend/requirements.txt
+pip install -r processing/requirements.txt
 
 # Copy environment file
-copy ..\.env.example .env
+copy .env.example backend\.env      # Windows
+# cp .env.example backend/.env     # Linux/Mac
 
-# Run the backend
-uvicorn app.main:app --reload
+# Start backend (Windows)
+start_backend.bat
+
+# OR start backend (Linux/Mac)
+bash start_backend.sh
+
+# OR start backend (any OS, from project root)
+python backend/start_backend.py
 ```
 
 Backend will start at: **http://localhost:8000**  
 API docs at: **http://localhost:8000/docs**
+
+> âš ï¸ Do NOT run `uvicorn app.main:app` directly from `backend/` â€” the
+> `processing` module won't be on the Python path. Always use
+> `start_backend.bat` / `start_backend.sh` / `backend/start_backend.py`.
 
 ## Step 3: Frontend Setup (New Terminal)
 
@@ -56,11 +62,39 @@ npm run dev
 
 Frontend will start at: **http://localhost:5173**
 
-## Step 4: Verify Integration
+## Step 4: Process a Video
 
-1. Open browser: http://localhost:5173
-2. Click "Check Connection" button
-3. Status should change to **healthy** ✅
+Upload `data/sample.mp4` via the UI at http://localhost:5173, or call the API directly:
+
+```bash
+# Upload video
+curl -X POST http://localhost:8000/api/v1/videos/upload \
+  -F "file=@data/sample.mp4"
+
+# Copy the job_id from the response, then start processing:
+curl -X POST http://localhost:8000/api/v1/videos/<job_id>/process
+
+# Check status (poll until "completed")
+curl http://localhost:8000/api/v1/videos/<job_id>/status
+
+# Get results (M1-M8 structured output)
+curl http://localhost:8000/api/v1/videos/<job_id>/results
+
+# Get AI explanation (M9 -- requires Ollama with qwen3:8b)
+curl -X POST http://localhost:8000/api/v1/videos/<job_id>/explanation
+```
+
+## Step 5: AI Explanations (Optional - M9)
+
+M9 uses Ollama + qwen3:8b. Install Ollama, then:
+
+```bash
+ollama pull qwen3:8b
+```
+
+If Ollama/qwen3:8b is unavailable or too slow on CPU, the system
+**automatically falls back** to a deterministic M8-based narrative.
+The fallback is always enabled - no manual configuration required.
 
 ## Quick Test Commands
 
@@ -68,133 +102,91 @@ Frontend will start at: **http://localhost:5173**
 ```bash
 curl http://localhost:8000/health
 ```
+Expected: `{"status": "healthy"}`
 
-Expected response:
-```json
-{"status": "healthy"}
-```
-
-### Backend Root
+### Run Full Test Suite (202 tests)
 ```bash
-curl http://localhost:8000/
+# From project root
+python -m pytest processing/tests/ -v --tb=line -q
 ```
 
-Expected response:
-```json
-{
-  "name": "Flagship 107 API",
-  "version": "0.1.0",
-  "status": "operational"
-}
-```
-
-### Run Backend Tests
+### Run End-to-End Pipeline (no server needed)
 ```bash
-cd backend
-pytest
+# From project root
+python run_e2e_validation.py data/sample.mp4
 ```
 
-Expected: 2 tests pass ✅
+### Frontend Lint & Build
+```bash
+cd frontend
+npm run lint
+npm run build
+```
 
-## Project Structure Overview
+## Project Structure
 
 ```
 Flagship107/
-├── backend/          ← FastAPI server (port 8000)
-├── frontend/         ← React app (port 5173)
-├── processing/       ← AI/ML engines (called by backend)
-├── data/samples/     ← Place test videos here
-├── README.md         ← Detailed documentation
-├── AGENTS.md         ← Architecture & coding guidelines
-└── MILESTONE_TRACKER.md  ← Development progress
+â”œâ”€â”€ backend/              <- FastAPI server (port 8000)
+â”‚   â”œâ”€â”€ app/              <- API routes, services, models
+â”‚   â”œâ”€â”€ start_backend.py  <- Correct startup script
+â”‚   â””â”€â”€ requirements.txt
+â”œâ”€â”€ frontend/             <- React + Vite app (port 5173)
+â”‚   â””â”€â”€ src/
+â”œâ”€â”€ processing/           <- M1-M9 AI/ML pipeline
+â”‚   â”œâ”€â”€ detection/        <- M1: YOLO object detection
+â”‚   â”œâ”€â”€ tracking/         <- M2: Multi-object tracking
+â”‚   â”œâ”€â”€ behavior/         <- M3: Behavior analysis
+â”‚   â”œâ”€â”€ anomaly/          <- M4: Anomaly detection
+â”‚   â”œâ”€â”€ events/           <- M5: Event correlation
+â”‚   â”œâ”€â”€ interactions/     <- M6: Multi-entity interactions
+â”‚   â”œâ”€â”€ context/          <- M8: Context synthesis
+â”‚   â”œâ”€â”€ llm/              <- M9: LLM explanations (Ollama)
+â”‚   â””â”€â”€ pipeline/         <- End-to-end orchestration
+â”œâ”€â”€ data/
+â”‚   â””â”€â”€ sample.mp4        <- Test video (33MB, 10s)
+â”œâ”€â”€ start_backend.bat     <- Windows backend launcher
+â”œâ”€â”€ start_backend.sh      <- Linux/Mac backend launcher
+â””â”€â”€ .env.example          <- Environment template
 ```
-
-## Next Steps
-
-### For Development
-
-**Milestone 1: Hello Detection**
-- Implement video upload API
-- Add YOLO object detection
-- Display results on frontend
-
-See `MILESTONE_TRACKER.md` for detailed tasks.
-
-### For Understanding
-
-Read in this order:
-1. `README.md` - Project overview
-2. `AGENTS.md` - Architecture details
-3. `MILESTONE_TRACKER.md` - Development plan
 
 ## Common Issues
 
 ### Backend won't start
-- Check if Python 3.10+ is installed: `python --version`
-- Check if venv is activated: prompt should show `(venv)`
-- Try: `pip install --upgrade pip` then reinstall requirements
+- Use `python backend/start_backend.py` from the project root (not `uvicorn` directly)
+- Check Python 3.10+: `python --version`
+- Install both requirements: `pip install -r backend/requirements.txt -r processing/requirements.txt`
+
+### "No module named 'processing'"
+- You are running uvicorn from `backend/` without setting PYTHONPATH
+- Fix: Use `start_backend.bat` or `python backend/start_backend.py` from the project root
 
 ### Frontend won't start
-- Check if Node 18+ is installed: `node --version`
-- Delete `node_modules` and `package-lock.json`, run `npm install` again
+- Check Node 18+: `node --version`
+- Delete `node_modules` and run `npm install` again
 - Check port 5173 is not in use
 
-### Connection fails
-- Ensure backend is running on port 8000
-- Ensure frontend is running on port 5173
-- Check firewall/antivirus not blocking ports
-
-## Useful Commands
-
-### Backend
-```bash
-# Format code
-black app/
-
-# Lint code
-flake8 app/
-
-# Run with specific port
-uvicorn app.main:app --reload --port 8001
-```
-
-### Frontend
-```bash
-# Lint code
-npm run lint
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
+### M9 explanation times out
+- qwen3:8b on CPU takes 60-120s per explanation -- this is expected
+- The system will use the deterministic fallback automatically
+- For faster results, run Ollama on a GPU machine
 
 ## Environment Variables
 
-Key settings in `.env`:
+Key settings in `backend/.env` (copy from `.env.example`):
 
 ```env
-# Backend
-BACKEND_PORT=8000
-
-# Processing
-MAX_VIDEO_SIZE_MB=100
-YOLO_MODEL=yolov8n.pt
-
-# AI
 OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:latest
+OLLAMA_MODEL=qwen3:8b
+YOLO_MODEL=yolov8n.pt
+MAX_VIDEO_SIZE_MB=100
+UPLOAD_FOLDER=./uploads
+OUTPUT_FOLDER=./outputs
 ```
-
-## Support
-
-- Check `README.md` for detailed setup
-- Check `AGENTS.md` for architecture
-- Check `MILESTONE_TRACKER.md` for development status
 
 ---
 
-**Status:** Milestone 0 Complete ✅  
-**Next:** Milestone 1 - Hello Detection  
-**Updated:** 2026-10-06
+**Status:** Milestones 1-9 Complete
+**Pipeline:** M1->M2->M3->M4->M5->M6->M8->M9 fully operational
+**Updated:** 2026-10-07
+

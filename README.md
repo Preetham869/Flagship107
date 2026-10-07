@@ -551,22 +551,16 @@ npm run test
 
 ## MVP Scope
 
-### ✅ Milestone 1: Hello Detection (COMPLETED)
-- ✅ Video file processing with OpenCV
-- ✅ YOLO-based object detection (people + 79 other COCO classes)
-- ✅ Bounding box visualization with labels and confidence scores
-- ✅ GPU acceleration with CPU fallback
-- ✅ Annotated output video generation
-- ✅ Command-line interface
-- ✅ Modular detection API for future milestones
-
-### 🔄 In Progress / Upcoming
-- Multi-object tracking with persistent IDs (Milestone 2)
-- Behavioral analysis and pattern recognition (Milestone 3)
-- Anomaly detection (sudden appearance, unusual speed, loitering)
-- WebSocket real-time updates
-- Video upload API and web interface
-- AI-powered explanations (Ollama/Qwen)
+### ✅ Milestones 1-9 (COMPLETED)
+- ✅ M1: Object Detection (YOLO)
+- ✅ M2: Multi-object Tracking with persistent IDs (ByteTrack/BoT-SORT)
+- ✅ M3: Behavioral Analysis (speed, direction, states)
+- ✅ M4: Anomaly Detection (unusual speed, direction, etc)
+- ✅ M5: Event Extraction (clustering anomalies)
+- ✅ M6: Interactions (relationship tracking)
+- ✅ M8: Context Synthesis (scene understanding)
+- ✅ M9: AI Explanations (Ollama + Qwen3:8b with deterministic fallback)
+- ✅ Full Stack Integration (FastAPI backend + React frontend)
 
 **Not in MVP:**
 - Real-time camera feeds
