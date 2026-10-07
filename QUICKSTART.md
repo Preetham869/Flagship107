@@ -1,200 +1,121 @@
-# Flagship 107 - Quick Start Guide
+# 🚩 Flagship 107 — Quick Start
 
-Get up and running in 5 minutes.
+Get from a fresh clone to the working investigation dashboard.
 
-## Prerequisites
+## 1. Prerequisites
 
-✅ Python 3.10+  
-✅ Node.js 18+  
-✅ Git  
+- Python 3.10+
+- Node.js 18+
+- npm
+- Git
+- Ollama for local M9 explanations
 
-## Step 1: Clone & Setup (If not already done)
+## 2. Clone
 
 ```bash
-cd c:\Users\preet\OneDrive\Projects\Flagship107
+git clone https://github.com/Preetham869/Flagship107.git
+cd Flagship107
 ```
 
-Project structure is already created. You're ready to go!
+## 3. Backend + processing dependencies
 
-## Step 2: Backend Setup
-
-```bash
-# Navigate to backend
+```powershell
 cd backend
-
-# Create virtual environment
 python -m venv venv
-
-# Activate virtual environment
-venv\Scripts\activate
-
-# Install dependencies
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+cd ..
 
-# Copy environment file
-copy ..\.env.example .env
-
-# Run the backend
-uvicorn app.main:app --reload
+cd processing
+pip install -r requirements.txt
+cd ..
 ```
 
-Backend will start at: **http://localhost:8000**  
-API docs at: **http://localhost:8000/docs**
+## 4. Local AI
 
-## Step 3: Frontend Setup (New Terminal)
+```powershell
+ollama pull qwen3:8b
+ollama list
+```
 
-```bash
-# Navigate to frontend
+M1-M8 work without Ollama. M9 has fallback behaviour when local generation is unavailable.
+
+## 5. Start backend
+
+Preferred Windows command:
+
+```powershell
+.\backend\start_backend.bat
+```
+
+Or from the repository root:
+
+```powershell
+$env:PYTHONPATH = (Get-Location).Path
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Backend: **http://localhost:8000**  
+API docs: **http://localhost:8000/docs**
+
+## 6. Start frontend
+
+Open a second terminal:
+
+```powershell
 cd frontend
-
-# Install dependencies
 npm install
-
-# Run the frontend
 npm run dev
 ```
 
-Frontend will start at: **http://localhost:5173**
+Frontend: **http://localhost:5173**
 
-## Step 4: Verify Integration
+## 7. Investigation flow
 
-1. Open browser: http://localhost:5173
-2. Click "Check Connection" button
-3. Status should change to **healthy** ✅
+**Upload → Process → Detection → Tracking → Behaviour → Anomaly → Event → Interaction → Context → AI Explanation**
 
-## Quick Test Commands
+1. Upload a video.
+2. Start processing.
+3. Inspect tracks and behaviour.
+4. Select anomalies/events.
+5. Inspect interactions and contextual evidence.
+6. Generate M9 explanation when Ollama is available.
 
-### Backend Health Check
-```bash
-curl http://localhost:8000/health
+## 8. Validate the processing pipeline
+
+```powershell
+python run_e2e_validation.py data/sample.mp4
 ```
 
-Expected response:
-```json
-{"status": "healthy"}
+## 9. Regression checks
+
+```powershell
+python -m pytest processing/tests/ -v --tb=line -q
 ```
 
-### Backend Root
-```bash
-curl http://localhost:8000/
-```
+Frontend:
 
-Expected response:
-```json
-{
-  "name": "Flagship 107 API",
-  "version": "0.1.0",
-  "status": "operational"
-}
-```
-
-### Run Backend Tests
-```bash
-cd backend
-pytest
-```
-
-Expected: 2 tests pass ✅
-
-## Project Structure Overview
-
-```
-Flagship107/
-├── backend/          ← FastAPI server (port 8000)
-├── frontend/         ← React app (port 5173)
-├── processing/       ← AI/ML engines (called by backend)
-├── data/samples/     ← Place test videos here
-├── README.md         ← Detailed documentation
-├── AGENTS.md         ← Architecture & coding guidelines
-└── MILESTONE_TRACKER.md  ← Development progress
-```
-
-## Next Steps
-
-### For Development
-
-**Milestone 1: Hello Detection**
-- Implement video upload API
-- Add YOLO object detection
-- Display results on frontend
-
-See `MILESTONE_TRACKER.md` for detailed tasks.
-
-### For Understanding
-
-Read in this order:
-1. `README.md` - Project overview
-2. `AGENTS.md` - Architecture details
-3. `MILESTONE_TRACKER.md` - Development plan
-
-## Common Issues
-
-### Backend won't start
-- Check if Python 3.10+ is installed: `python --version`
-- Check if venv is activated: prompt should show `(venv)`
-- Try: `pip install --upgrade pip` then reinstall requirements
-
-### Frontend won't start
-- Check if Node 18+ is installed: `node --version`
-- Delete `node_modules` and `package-lock.json`, run `npm install` again
-- Check port 5173 is not in use
-
-### Connection fails
-- Ensure backend is running on port 8000
-- Ensure frontend is running on port 5173
-- Check firewall/antivirus not blocking ports
-
-## Useful Commands
-
-### Backend
-```bash
-# Format code
-black app/
-
-# Lint code
-flake8 app/
-
-# Run with specific port
-uvicorn app.main:app --reload --port 8001
-```
-
-### Frontend
-```bash
-# Lint code
+```powershell
+cd frontend
 npm run lint
-
-# Build for production
 npm run build
-
-# Preview production build
-npm run preview
 ```
 
-## Environment Variables
+## 10. Troubleshooting
 
-Key settings in `.env`:
+**Backend import errors:** start from the repository root or use `backend/start_backend.bat`.
 
-```env
-# Backend
-BACKEND_PORT=8000
+**Ollama unavailable:** M1-M8 can still run. Check with `ollama list` and confirm `qwen3:8b` exists.
 
-# Processing
-MAX_VIDEO_SIZE_MB=100
-YOLO_MODEL=yolov8n.pt
+**Frontend dependency errors:** run `npm install` inside `frontend`.
 
-# AI
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:latest
-```
+**YOLO weights missing:** Ultralytics downloads pretrained weights when first required and internet access is available.
 
-## Support
+## Read next
 
-- Check `README.md` for detailed setup
-- Check `AGENTS.md` for architecture
-- Check `MILESTONE_TRACKER.md` for development status
+1. README.md
+2. MILESTONE_TRACKER.md
+3. AGENTS.md
+4. Validation documents
 
----
-
-**Status:** Milestone 0 Complete ✅  
-**Next:** Milestone 1 - Hello Detection  
-**Updated:** 2026-10-06
+> **Important:** mocked M9 tests are not evidence of successful live Qwen generation. The repository distinguishes live Qwen, validated M9 logic, and deterministic fallback.
