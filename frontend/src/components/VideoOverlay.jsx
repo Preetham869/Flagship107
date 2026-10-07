@@ -90,7 +90,7 @@ const VideoOverlay = ({
         const overlayWidth = (x2 - x1) * scale;
         const overlayHeight = (y2 - y1) * scale;
 
-        const boxColor = isSelected ? '#7e57c2' : '#5a9fd4';
+        const boxColor = isSelected ? '#58a6ff' : '#5a9fd4';
         const opacity = isSelected ? 1 : 0.6;
 
         return (

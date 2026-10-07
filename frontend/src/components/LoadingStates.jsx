@@ -15,7 +15,7 @@ export const LoadingSpinner = ({ message = 'Processing...' }) => (
       width: '48px',
       height: '48px',
       border: '4px solid #37474f',
-      borderTop: '4px solid #7e57c2',
+      borderTop: '4px solid #58a6ff',
       borderRadius: '50%',
       animation: 'spin 1s linear infinite',
       marginBottom: '20px'
@@ -52,7 +52,7 @@ export const UploadingState = ({ progress }) => (
           cy="32" 
           r="28" 
           fill="none" 
-          stroke="#7e57c2" 
+          stroke="#58a6ff" 
           strokeWidth="4"
           strokeDasharray="175.84"
           strokeDashoffset={175.84 * (1 - (progress || 0) / 100)}
@@ -68,7 +68,7 @@ export const UploadingState = ({ progress }) => (
         transform: 'translate(-50%, -50%)',
         fontSize: '16px',
         fontWeight: '600',
-        color: '#7e57c2'
+        color: '#58a6ff'
       }}>
         {progress || 0}%
       </div>
@@ -112,7 +112,7 @@ export const ProcessingState = ({ status, progress }) => (
         <div style={{
           width: `${progress}%`,
           height: '100%',
-          backgroundColor: '#7e57c2',
+          backgroundColor: '#58a6ff',
           transition: 'width 0.3s',
           borderRadius: '3px'
         }} />
@@ -192,7 +192,7 @@ export const ErrorState = ({ error, onRetry }) => (
         onClick={onRetry}
         style={{
           padding: '10px 24px',
-          backgroundColor: '#7e57c2',
+          backgroundColor: '#58a6ff',
           color: '#fff',
           border: 'none',
           borderRadius: '6px',
@@ -201,8 +201,8 @@ export const ErrorState = ({ error, onRetry }) => (
           cursor: 'pointer',
           transition: 'background-color 0.2s'
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#673ab7'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7e57c2'}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3182ce'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#58a6ff'}
       >
         Try Again
       </button>
@@ -225,7 +225,7 @@ export const M9UnavailableState = () => (
     <div style={{
       fontSize: '36px',
       marginBottom: '16px',
-      color: '#7e57c2',
+      color: '#58a6ff',
       opacity: 0.6
     }}>
       ◈

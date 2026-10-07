@@ -30,7 +30,7 @@ const ScenesTab = ({ results, onSeek }) => {
                 style={{
                   backgroundColor: '#fff',
                   border: '1px solid #e0e0e0',
-                  borderLeft: '4px solid #673AB7',
+                  borderLeft: '4px solid #3182ce',
                   borderRadius: '8px',
                   padding: '20px',
                   cursor: 'pointer',
@@ -48,7 +48,7 @@ const ScenesTab = ({ results, onSeek }) => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                   <div>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#673AB7', marginBottom: '5px' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#3182ce', marginBottom: '5px' }}>
                       Scene {scene.scene_number || index + 1}
                     </div>
                     <div style={{ fontSize: '13px', color: '#666' }}>
@@ -58,7 +58,7 @@ const ScenesTab = ({ results, onSeek }) => {
                   </div>
                   <div style={{
                     backgroundColor: '#ede7f6',
-                    color: '#673AB7',
+                    color: '#3182ce',
                     padding: '5px 12px',
                     borderRadius: '6px',
                     fontSize: '13px',
@@ -83,7 +83,7 @@ const ScenesTab = ({ results, onSeek }) => {
                       <span
                         key={trackId}
                         style={{
-                          backgroundColor: '#673AB7',
+                          backgroundColor: '#3182ce',
                           color: '#fff',
                           padding: '4px 10px',
                           borderRadius: '12px',
@@ -107,7 +107,7 @@ const ScenesTab = ({ results, onSeek }) => {
                     padding: '12px',
                     backgroundColor: '#f9f9f9',
                     borderRadius: '6px',
-                    borderLeft: '3px solid #673AB7'
+                    borderLeft: '3px solid #3182ce'
                   }}>
                     {scene.scene_summary}
                   </div>
@@ -134,7 +134,7 @@ const ScenesTab = ({ results, onSeek }) => {
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: '500',
-                      color: '#673AB7',
+                      color: '#3182ce',
                       padding: '8px 0'
                     }}>
                       Track Details ({scene.track_summaries.length})
@@ -169,7 +169,7 @@ const ScenesTab = ({ results, onSeek }) => {
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: '500',
-                      color: '#673AB7',
+                      color: '#3182ce',
                       padding: '8px 0'
                     }}>
                       Detected Patterns ({scene.patterns.length})

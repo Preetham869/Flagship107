@@ -258,9 +258,9 @@ const EventTimeline = ({
             top: 0,
             bottom: 0,
             width: '3px',
-            backgroundColor: '#7e57c2',
+            backgroundColor: '#58a6ff',
             zIndex: 50,
-            boxShadow: '0 0 8px #7e57c2aa',
+            boxShadow: '0 0 8px #58a6ffaa',
             pointerEvents: 'none'
           }}>
             <div style={{
@@ -272,7 +272,7 @@ const EventTimeline = ({
               height: '0',
               borderLeft: '6px solid transparent',
               borderRight: '6px solid transparent',
-              borderTop: '8px solid #7e57c2'
+              borderTop: '8px solid #58a6ff'
             }} />
           </div>
         )}

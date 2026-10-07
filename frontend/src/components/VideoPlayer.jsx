@@ -202,7 +202,7 @@ const VideoPlayer = ({ videoUrl, onTimeUpdate, currentTime, selectedItem, select
           <div style={{
             width: `${(localTime / duration) * 100}%`,
             height: '100%',
-            backgroundColor: '#7e57c2',
+            backgroundColor: '#58a6ff',
             borderRadius: '4px',
             transition: 'width 0.1s',
             boxShadow: '0 0 8px rgba(126, 87, 194, 0.6)'
@@ -221,7 +221,7 @@ const VideoPlayer = ({ videoUrl, onTimeUpdate, currentTime, selectedItem, select
               onClick={togglePlayPause}
               style={{
                 padding: '8px 18px',
-                backgroundColor: '#7e57c2',
+                backgroundColor: '#58a6ff',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '6px',
@@ -233,8 +233,8 @@ const VideoPlayer = ({ videoUrl, onTimeUpdate, currentTime, selectedItem, select
                 alignItems: 'center',
                 gap: '6px'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#673ab7'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7e57c2'}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3182ce'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#58a6ff'}
             >
               {isPlaying ? '⏸' : '▶'} {isPlaying ? 'Pause' : 'Play'}
             </button>
@@ -253,7 +253,7 @@ const VideoPlayer = ({ videoUrl, onTimeUpdate, currentTime, selectedItem, select
                 onChange={handleVolumeChange}
                 style={{
                   width: '70px',
-                  accentColor: '#7e57c2'
+                  accentColor: '#58a6ff'
                 }}
               />
             </div>

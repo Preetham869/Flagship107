@@ -29,17 +29,20 @@ const IntelligencePanel = ({ results, onSeek, jobId }) => {
 
   return (
     <div style={{
-      backgroundColor: '#fff',
+      backgroundColor: '#161b22',
       borderRadius: '8px',
-      border: '1px solid #e0e0e0',
-      overflow: 'hidden'
+      border: '1px solid #30363d',
+      overflow: 'hidden',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
     }}>
       {/* Tab Navigation */}
       <div style={{
         display: 'flex',
-        borderBottom: '2px solid #e0e0e0',
-        backgroundColor: '#fafafa',
-        overflowX: 'auto'
+        borderBottom: '1px solid #30363d',
+        backgroundColor: '#0d1117',
+        overflowX: 'auto',
+        scrollbarWidth: 'none', // For Firefox
+        msOverflowStyle: 'none',  // For IE/Edge
       }}>
         {tabs.map(tab => {
           const isActive = activeTab === tab.id;
@@ -49,15 +52,15 @@ const IntelligencePanel = ({ results, onSeek, jobId }) => {
               onClick={() => setActiveTab(tab.id)}
               style={{
                 flex: '0 0 auto',
-                padding: '15px 20px',
+                padding: '14px 18px',
                 border: 'none',
-                backgroundColor: isActive ? '#fff' : 'transparent',
-                borderBottom: isActive ? '3px solid #673AB7' : '3px solid transparent',
+                backgroundColor: isActive ? '#161b22' : 'transparent',
+                borderTop: isActive ? '2px solid #58a6ff' : '2px solid transparent',
                 cursor: 'pointer',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: isActive ? '600' : '500',
-                color: isActive ? '#673AB7' : '#666',
-                transition: 'all 0.2s',
+                color: isActive ? '#e6edf3' : '#8b949e',
+                transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
@@ -65,26 +68,27 @@ const IntelligencePanel = ({ results, onSeek, jobId }) => {
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.backgroundColor = '#f5f5f5';
-                  e.currentTarget.style.color = '#333';
+                  e.currentTarget.style.color = '#c9d1d9';
+                  e.currentTarget.style.backgroundColor = '#161b22';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
+                  e.currentTarget.style.color = '#8b949e';
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = '#666';
                 }
               }}
             >
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
                 <span style={{
-                  backgroundColor: isActive ? '#673AB7' : '#e0e0e0',
-                  color: isActive ? '#fff' : '#666',
+                  backgroundColor: isActive ? 'rgba(88, 166, 255, 0.15)' : '#21262d',
+                  border: isActive ? '1px solid rgba(88, 166, 255, 0.4)' : '1px solid #30363d',
+                  color: isActive ? '#58a6ff' : '#8b949e',
                   padding: '2px 8px',
                   borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
+                  fontSize: '11px',
+                  fontWeight: '600'
                 }}>
                   {tab.count}
                 </span>
