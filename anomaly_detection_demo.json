@@ -1,0 +1,229 @@
+{
+  "config": {
+    "unusual_speed_threshold": 150.0,
+    "loitering_threshold": 5.0,
+    "speed_change_threshold": 100.0,
+    "direction_change_threshold": 80.0
+  },
+  "anomalies": [
+    {
+      "event_id": "07b7c406-6552-44bd-8f46-ff01c640c8e7",
+      "track_id": 2,
+      "frame_id": 61,
+      "timestamp": 2.033333333333333,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 180.00000000000065,
+        "position": [
+          146.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 180.00000000000065,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    },
+    {
+      "event_id": "3f6d846f-a043-4b26-a392-272b07a1a295",
+      "track_id": 2,
+      "frame_id": 61,
+      "timestamp": 2.033333333333333,
+      "anomaly_type": "sudden_speed_change",
+      "severity": "high",
+      "anomaly_score": 0.9,
+      "evidence": {
+        "previous_speed": 0.0,
+        "current_speed": 180.00000000000065,
+        "change_delta": 180.00000000000065,
+        "threshold": 100.0,
+        "description": "Sudden acceleration: speed changed by 180.0 px/s"
+      },
+      "observed_value": 180.00000000000065,
+      "threshold": 100.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track experienced sudden acceleration: speed changed from 0.0 to 180.0 px/s (delta 180.0 px/s), exceeding threshold of 100.0 px/s"
+    },
+    {
+      "event_id": "e5b46849-b3c9-4007-bdb4-ce45f32a84e9",
+      "track_id": 2,
+      "frame_id": 62,
+      "timestamp": 2.066666666666667,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 179.99999999999943,
+        "position": [
+          152.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 179.99999999999943,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    },
+    {
+      "event_id": "dfa2466c-ff3b-4f91-89b8-6786b97a87e9",
+      "track_id": 2,
+      "frame_id": 63,
+      "timestamp": 2.1,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 179.99999999999983,
+        "position": [
+          158.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 179.99999999999983,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    },
+    {
+      "event_id": "4f0a3352-93ed-4bca-a82e-9b7c75e5d4e1",
+      "track_id": 2,
+      "frame_id": 64,
+      "timestamp": 2.1333333333333333,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 180.00000000000003,
+        "position": [
+          164.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 180.00000000000003,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    },
+    {
+      "event_id": "fd5b940a-70fc-4e63-9cd3-76e074fa0669",
+      "track_id": 2,
+      "frame_id": 65,
+      "timestamp": 2.1666666666666665,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 180.00000000000003,
+        "position": [
+          170.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 180.00000000000003,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    },
+    {
+      "event_id": "a72d2d44-96af-4737-a865-7f9a3151de37",
+      "track_id": 2,
+      "frame_id": 66,
+      "timestamp": 2.2,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 180.00000000000003,
+        "position": [
+          176.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 180.00000000000003,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    },
+    {
+      "event_id": "2bf771c6-7439-4729-b18f-a25880dc33b9",
+      "track_id": 2,
+      "frame_id": 67,
+      "timestamp": 2.2333333333333334,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 180.00000000000003,
+        "position": [
+          182.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 180.00000000000003,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    },
+    {
+      "event_id": "51180a57-5d57-4560-98b6-461965eadc23",
+      "track_id": 2,
+      "frame_id": 68,
+      "timestamp": 2.2666666666666666,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 180.00000000000003,
+        "position": [
+          188.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 180.00000000000003,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    },
+    {
+      "event_id": "bc2aade2-72c9-46a1-bab7-1f24328baa7e",
+      "track_id": 2,
+      "frame_id": 69,
+      "timestamp": 2.3,
+      "anomaly_type": "unusual_speed",
+      "severity": "low",
+      "anomaly_score": 0.6,
+      "evidence": {
+        "observed_speed": 180.00000000000003,
+        "position": [
+          194.0,
+          200.0
+        ],
+        "description": "High speed: 180.0 px/s"
+      },
+      "observed_value": 180.00000000000003,
+      "threshold": 150.0,
+      "current_behavior_state": "fast-moving",
+      "explanation": "Track moving at 180.0 px/s, exceeding unusual speed threshold of 150.0 px/s"
+    }
+  ],
+  "summary": {
+    "total_anomalies": 407,
+    "anomaly_counts": {
+      "unusual_speed": 239,
+      "sudden_speed_change": 1,
+      "loitering": 149,
+      "sudden_direction_change": 1,
+      "restricted_zone_entry": 17
+    }
+  }
+}

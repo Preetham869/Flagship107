@@ -1,0 +1,105 @@
+================================================================================
+FLAGSHIP 107 - END-TO-END PIPELINE VALIDATION REPORT
+================================================================================
+
+Generated: 2026-10-06 22:42:19
+Video: data\sample.mp4
+
+================================================================================
+VIDEO INFORMATION
+================================================================================
+Resolution: 2160x3840
+FPS: 23.98
+Total Frames: 240
+Duration: 10.01 seconds
+Frames Processed: 240
+Frames Skipped: 0
+Processing Time: 15.43 seconds
+Processing FPS: 15.55
+
+================================================================================
+M1: OBJECT DETECTION
+================================================================================
+Total Detections: 734
+Average Detections per Frame: 3.06
+
+Detections by Class:
+  bicycle: 13
+  chair: 1
+  person: 720
+
+================================================================================
+M2: MULTI-OBJECT TRACKING
+================================================================================
+Unique Track IDs: 5
+Total Track Observations: 734
+Average Tracks per Frame: 3.06
+
+Track Duration Statistics:
+  Min Duration: 0.04s
+  Max Duration: 10.01s
+  Avg Duration: 6.41s
+
+================================================================================
+M3: BEHAVIOR ANALYSIS
+================================================================================
+Total Behavior Updates: 734
+Average Speed: 100.38 px/s
+Max Speed: 458.26 px/s
+
+States Observed:
+  fast-moving: 282
+  moving: 452
+
+================================================================================
+M4: ANOMALY DETECTION
+================================================================================
+Total Anomalies: 44
+
+Anomalies by Type:
+  sudden_speed_change: 7
+  unusual_speed: 37
+
+Severity Distribution:
+  high: 6
+  low: 27
+  medium: 11
+
+================================================================================
+M5: EVENT CORRELATION
+================================================================================
+Raw Anomalies: 44
+Correlated Events: 5
+Alert Reduction: 88.6%
+Compression Ratio: 0.114
+
+Events by Type:
+  abnormal_movement_sequence: 2
+  high_speed_activity: 3
+
+Event Severity Distribution:
+  high: 2
+  low: 3
+
+================================================================================
+M6: MULTI-ENTITY INTERACTIONS
+================================================================================
+Total Relationships: 0
+Tracked Pairs: 9
+Groups Formed: 0
+
+Relationships by Type:
+
+================================================================================
+PIPELINE SUMMARY
+================================================================================
+[OK] M1: Detection - 734 detections
+[OK] M2: Tracking - 5 tracks
+[OK] M3: Behavior - 734 updates
+[OK] M4: Anomalies - 44 detected
+[OK] M5: Events - 5 correlated
+[OK] M6: Interactions - 0 relationships
+
+Total Processing Time: 15.43s
+Processing Speed: 15.55 FPS
+================================================================================
