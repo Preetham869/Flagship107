@@ -84,12 +84,12 @@ const DashboardContent = ({ jobId, results, onBack }) => {
               </h1>
               <div style={{
                 padding: '4px 10px',
-                backgroundColor: '#7e57c222',
-                border: '1px solid #7e57c244',
+                backgroundColor: '#58a6ff22',
+                border: '1px solid #58a6ff44',
                 borderRadius: '6px',
                 fontSize: '11px',
                 fontWeight: '600',
-                color: '#7e57c2',
+                color: '#58a6ff',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
               }}>

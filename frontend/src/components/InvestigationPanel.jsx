@@ -412,15 +412,15 @@ const EvidenceChain = ({ steps }) => (
           alignItems: 'center',
           gap: '12px',
           padding: '10px 12px',
-          backgroundColor: step.active ? '#7e57c222' : '#0d1220',
-          border: step.active ? '1px solid #7e57c244' : '1px solid #1a2332',
+          backgroundColor: step.active ? '#58a6ff22' : '#0d1220',
+          border: step.active ? '1px solid #58a6ff44' : '1px solid #1a2332',
           borderRadius: '6px'
         }}>
           <div style={{
             width: '32px',
             height: '32px',
             borderRadius: '50%',
-            backgroundColor: step.active ? '#7e57c2' : '#263238',
+            backgroundColor: step.active ? '#58a6ff' : '#263238',
             color: '#fff',
             display: 'flex',
             alignItems: 'center',

@@ -85,7 +85,7 @@ const EventsTab = ({ results, onSeek }) => {
                 key={event.event_id || index}
                 style={{
                   backgroundColor: selected ? '#263238' : '#1e2832',
-                  border: selected ? `2px solid #7e57c2` : `1px solid #37474f`,
+                  border: selected ? `2px solid #58a6ff` : `1px solid #37474f`,
                   borderLeft: `4px solid ${severityStyle.border}`,
                   borderRadius: '8px',
                   padding: '16px',
@@ -158,7 +158,7 @@ const EventsTab = ({ results, onSeek }) => {
                     <div>
                       <div style={{ color: '#78909c', marginBottom: '2px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Start</div>
                       <div 
-                        style={{ color: '#7e57c2', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                        style={{ color: '#58a6ff', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
                         onClick={(e) => { e.stopPropagation(); onSeek?.(event.start_timestamp); }}
                       >
                         {formatTime(event.start_timestamp)}
@@ -188,7 +188,7 @@ const EventsTab = ({ results, onSeek }) => {
                     <div>
                       <div style={{ color: '#78909c', marginBottom: '2px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>End</div>
                       <div 
-                        style={{ color: '#7e57c2', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                        style={{ color: '#58a6ff', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
                         onClick={(e) => { e.stopPropagation(); onSeek?.(event.end_timestamp); }}
                       >
                         {formatTime(event.end_timestamp)}
@@ -219,7 +219,7 @@ const EventsTab = ({ results, onSeek }) => {
                       {event.participating_track_ids.map(trackId => (
                         <span key={trackId} style={{
                           backgroundColor: '#263238',
-                          color: '#7e57c2',
+                          color: '#58a6ff',
                           padding: '4px 10px',
                           borderRadius: '4px',
                           fontSize: '12px',

@@ -113,7 +113,7 @@ const AnomaliesTab = ({ results, onSeek }) => {
                 key={anomaly.event_id || index}
                 style={{
                   backgroundColor: selected ? '#263238' : '#1e2832',
-                  border: selected ? `2px solid #7e57c2` : `1px solid #37474f`,
+                  border: selected ? `2px solid #58a6ff` : `1px solid #37474f`,
                   borderLeft: `4px solid ${severityStyle.border}`,
                   borderRadius: '8px',
                   padding: '14px',

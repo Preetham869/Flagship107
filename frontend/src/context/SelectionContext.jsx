@@ -59,6 +59,7 @@ export const SelectionProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSelection = () => {
   const context = useContext(SelectionContext);
   if (!context) {

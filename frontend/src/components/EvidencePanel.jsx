@@ -70,7 +70,7 @@ const EvidencePanel = ({ item, type, onClose, onSeek }) => {
             <span style={{ color: '#90a4ae' }}>Timestamp:</span>
             <span 
               onClick={() => onSeek?.(anomaly.timestamp)}
-              style={{ color: '#7e57c2', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ color: '#58a6ff', cursor: 'pointer', textDecoration: 'underline' }}
             >
               {formatTimestamp(anomaly.timestamp)} ({anomaly.timestamp.toFixed(3)}s)
             </span>
@@ -222,7 +222,7 @@ const EvidencePanel = ({ item, type, onClose, onSeek }) => {
             <span style={{ color: '#90a4ae' }}>Start Time:</span>
             <span 
               onClick={() => onSeek?.(event.start_timestamp)}
-              style={{ color: '#7e57c2', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ color: '#58a6ff', cursor: 'pointer', textDecoration: 'underline' }}
             >
               {formatTimestamp(event.start_timestamp)} ({event.start_timestamp.toFixed(3)}s)
             </span>
@@ -230,7 +230,7 @@ const EvidencePanel = ({ item, type, onClose, onSeek }) => {
             <span style={{ color: '#90a4ae' }}>End Time:</span>
             <span 
               onClick={() => onSeek?.(event.end_timestamp)}
-              style={{ color: '#7e57c2', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ color: '#58a6ff', cursor: 'pointer', textDecoration: 'underline' }}
             >
               {formatTimestamp(event.end_timestamp)} ({event.end_timestamp.toFixed(3)}s)
             </span>
@@ -429,7 +429,7 @@ const EvidencePanel = ({ item, type, onClose, onSeek }) => {
           <div style={{ backgroundColor: '#263238', padding: '12px', borderRadius: '6px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {Object.entries(scene.track_summaries).map(([trackId, summary]) => (
               <div key={trackId} style={{ color: '#cfd8dc' }}>
-                <div style={{ fontWeight: '600', color: '#7e57c2', marginBottom: '4px' }}>
+                <div style={{ fontWeight: '600', color: '#58a6ff', marginBottom: '4px' }}>
                   Track {trackId}:
                 </div>
                 <div style={{ paddingLeft: '12px', fontSize: '12px' }}>
@@ -515,7 +515,7 @@ const EvidencePanel = ({ item, type, onClose, onSeek }) => {
             <span style={{ color: '#90a4ae' }}>First Seen:</span>
             <span 
               onClick={() => onSeek?.(track.first_timestamp)}
-              style={{ color: '#7e57c2', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ color: '#58a6ff', cursor: 'pointer', textDecoration: 'underline' }}
             >
               {formatTimestamp(track.first_timestamp)} ({track.first_timestamp.toFixed(3)}s)
             </span>
@@ -523,7 +523,7 @@ const EvidencePanel = ({ item, type, onClose, onSeek }) => {
             <span style={{ color: '#90a4ae' }}>Last Seen:</span>
             <span 
               onClick={() => onSeek?.(track.last_timestamp)}
-              style={{ color: '#7e57c2', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ color: '#58a6ff', cursor: 'pointer', textDecoration: 'underline' }}
             >
               {formatTimestamp(track.last_timestamp)} ({track.last_timestamp.toFixed(3)}s)
             </span>
