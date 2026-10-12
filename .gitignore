@@ -84,3 +84,9 @@ htmlcov/
 
 # OS
 Thumbs.db
+
+# Datasets and test video collections
+Flagship107_TestVideos/
+
+# Scratch experiments and research artifacts
+scratch/

@@ -3,6 +3,7 @@
  * Shows detailed evidence and context for selected investigation target
  */
 import { useSelection } from '../context/SelectionContext';
+import { getTrackColor } from '../utils/trackColors';
 
 const InvestigationPanel = ({ results, onSeek }) => {
   const { selectedItem, selectedType } = useSelection();
@@ -69,7 +70,30 @@ const EventInvestigation = ({ event }) => {
           <InfoRow label="Event Type" value={event.event_type?.replace(/_/g, ' ')} />
           <InfoRow label="Time Range" value={`${event.start_timestamp?.toFixed(2)}s → ${event.end_timestamp?.toFixed(2)}s`} />
           <InfoRow label="Duration" value={`${((event.end_timestamp - event.start_timestamp) || 0).toFixed(2)}s`} />
-          <InfoRow label="Tracks Involved" value={event.track_ids?.map(id => `#${id}`).join(', ') || 'N/A'} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #1a2332' }}>
+            <span style={{ fontSize: '13px', color: '#8b949e' }}>Tracks Involved</span>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {event.track_ids && event.track_ids.length > 0 ? (
+                event.track_ids.map(id => (
+                  <span
+                    key={id}
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      backgroundColor: getTrackColor(id),
+                      color: '#0d1117'
+                    }}
+                  >
+                    #{id}
+                  </span>
+                ))
+              ) : (
+                <span style={{ fontSize: '13px', color: '#c9d1d9' }}>N/A</span>
+              )}
+            </div>
+          </div>
           <InfoRow label="Source Anomalies" value={`${event.source_anomaly_ids?.length || 0} anomalies`} />
           
           {event.source_anomaly_types && event.source_anomaly_types.length > 0 && (
@@ -166,7 +190,21 @@ const AnomalyInvestigation = ({ anomaly }) => {
         <InvestigationSection title="Observed Evidence" icon="📊">
           <InfoRow label="Anomaly Type" value={anomaly.anomaly_type?.replace(/_/g, ' ')} />
           <InfoRow label="Timestamp" value={`${anomaly.timestamp?.toFixed(2)}s`} />
-          <InfoRow label="Track ID" value={`#${anomaly.track_id}`} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #1a2332' }}>
+            <span style={{ fontSize: '13px', color: '#8b949e' }}>Track ID</span>
+            <span
+              style={{
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: '700',
+                backgroundColor: getTrackColor(anomaly.track_id),
+                color: '#0d1117'
+              }}
+            >
+              #{anomaly.track_id}
+            </span>
+          </div>
           <InfoRow label="Frame ID" value={anomaly.frame_id || 'N/A'} />
           
           {anomaly.evidence && (
@@ -222,9 +260,12 @@ const AnomalyInvestigation = ({ anomaly }) => {
 
 // Track Investigation Component
 const TrackInvestigation = ({ track, results, onSeek }) => {
+  const trackId = track.track_id || track.id;
+  const trackColor = getTrackColor(trackId);
+
   // Find related anomalies
   const relatedAnomalies = (results.all_anomalies || []).filter(
-    a => a.track_id === (track.track_id || track.id)
+    a => String(a.track_id) === String(trackId)
   );
 
   return (
@@ -237,28 +278,81 @@ const TrackInvestigation = ({ track, results, onSeek }) => {
       <div style={{
         padding: '16px 20px',
         backgroundColor: '#1e2832',
-        borderBottom: '1px solid #263238'
+        borderBottom: '1px solid #263238',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
       }}>
-        <div style={{ fontSize: '16px', fontWeight: '600', color: '#e0e6ed' }}>
-          Track Investigation
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{
+            backgroundColor: trackColor,
+            color: '#0d1117',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '13px',
+            fontWeight: '700',
+          }}>
+            #{trackId}
+          </span>
+          <div style={{ fontSize: '16px', fontWeight: '600', color: '#e0e6ed' }}>
+            Track Investigation
+          </div>
+        </div>
+
+        {/* Quick jump buttons */}
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {track.first_seen !== undefined && (
+            <button
+              onClick={() => onSeek?.(track.first_seen)}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: '#263238',
+                border: '1px solid #37474f',
+                color: '#eceff1',
+                borderRadius: '4px',
+                fontSize: '11px',
+                cursor: 'pointer',
+              }}
+            >
+              First Seen ({track.first_seen.toFixed(1)}s)
+            </button>
+          )}
+          {track.last_seen !== undefined && (
+            <button
+              onClick={() => onSeek?.(track.last_seen)}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: '#263238',
+                border: '1px solid #37474f',
+                color: '#eceff1',
+                borderRadius: '4px',
+                fontSize: '11px',
+                cursor: 'pointer',
+              }}
+            >
+              Last Seen ({track.last_seen.toFixed(1)}s)
+            </button>
+          )}
         </div>
       </div>
 
       <div style={{ padding: '20px' }}>
         <InvestigationSection title="Track Information" icon="👤">
-          <InfoRow label="Track ID" value={`#${track.track_id || track.id}`} />
+          <InfoRow label="Track ID" value={`#${trackId}`} />
           <InfoRow label="Class" value={track.class_name || 'Unknown'} />
           <InfoRow label="First Seen" value={track.first_seen !== undefined ? `${track.first_seen.toFixed(2)}s` : 'N/A'} />
           <InfoRow label="Last Seen" value={track.last_seen !== undefined ? `${track.last_seen.toFixed(2)}s` : 'N/A'} />
           <InfoRow label="Duration" value={track.duration !== undefined ? `${track.duration.toFixed(2)}s` : 'N/A'} />
-          <InfoRow label="Observations" value={track.observation_count || 'N/A'} />
+          <InfoRow label="Observations" value={track.observation_count || track.observations || 'N/A'} />
         </InvestigationSection>
 
         <InvestigationSection title="Behavior Metrics" icon="📈">
           <InfoRow label="Avg Speed" value={track.avg_speed !== undefined ? `${track.avg_speed.toFixed(1)} px/s` : 'N/A'} />
           <InfoRow label="Max Speed" value={track.max_speed !== undefined ? `${track.max_speed.toFixed(1)} px/s` : 'N/A'} />
-          <InfoRow label="Dominant State" value={track.dominant_state || 'N/A'} />
-          <InfoRow label="Trajectory" value={track.trajectory_type || 'N/A'} />
+          <InfoRow label="Dominant State" value={track.dominant_state || (track.states_list && track.states_list[0]) || 'N/A'} />
+          <div style={{ marginTop: '8px', fontSize: '11px', color: '#8b949e', fontStyle: 'italic' }}>
+            Note: Speeds are measured in 2D image coordinates (px/s) and do not represent physical velocity.
+          </div>
         </InvestigationSection>
 
         <InvestigationSection title="Related Anomalies" icon="⚠">

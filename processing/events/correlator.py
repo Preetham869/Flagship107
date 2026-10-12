@@ -369,8 +369,15 @@ class EventCorrelator:
             # Check if multiple anomaly types are present
             anomaly_types = {a.get("anomaly_type") for a in movement_group}
 
+            # Avoid creating abnormal movement sequence solely because unusual_speed and sudden_speed_change
+            # co-occurred from the same underlying acceleration. A true movement sequence
+            # represents diverse movement dynamics (e.g. speed change combined with direction change).
+            is_valid_sequence = len(anomaly_types) >= 2 and not (
+                anomaly_types == {"unusual_speed", "sudden_speed_change"}
+            )
+
             if (
-                len(anomaly_types) >= 2
+                is_valid_sequence
                 and len(movement_group) >= self.config.min_movement_sequence
             ):
                 # Create movement sequence event

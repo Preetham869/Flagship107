@@ -92,4 +92,16 @@ export const getVideoMetadata = async (jobId) => {
   return response.data;
 };
 
+export const getExplanation = async (jobId) => {
+  const response = await api.get(`/api/v1/videos/${jobId}/explanation`);
+  return response.data;
+};
+
+export const generateExplanation = async (jobId, options = {}) => {
+  const response = await api.post(`/api/v1/videos/${jobId}/explanation`, {
+    force_regenerate: options.forceRegenerate || false,
+  });
+  return response.data;
+};
+
 export default api;

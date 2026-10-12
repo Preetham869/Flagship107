@@ -4,6 +4,8 @@
  * Shows clear distinction between Observed, Derived, and AI-generated data
  */
 
+import { getTrackColor } from '../utils/trackColors';
+
 const EvidencePanel = ({ item, type, onClose, onSeek }) => {
   if (!item) return null;
 
@@ -35,8 +37,18 @@ const EvidencePanel = ({ item, type, onClose, onSeek }) => {
             <div style={{ fontSize: '18px', fontWeight: '600', color: '#eceff1', marginBottom: '8px' }}>
               {anomaly.anomaly_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </div>
-            <div style={{ fontSize: '13px', color: '#b0bec5' }}>
-              Track #{anomaly.track_id} • {formatTimestamp(anomaly.timestamp)}
+            <div style={{ fontSize: '13px', color: '#b0bec5', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                backgroundColor: getTrackColor(anomaly.track_id),
+                color: '#0d1117',
+                padding: '1px 6px',
+                borderRadius: '3px',
+                fontWeight: '700',
+                fontSize: '11px',
+              }}>
+                #{anomaly.track_id}
+              </span>
+              <span>• {formatTimestamp(anomaly.timestamp)}</span>
             </div>
           </div>
           <div style={{

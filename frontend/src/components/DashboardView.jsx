@@ -13,11 +13,12 @@ import SystemStatus from './SystemStatus';
 import InvestigationHeader from './InvestigationHeader';
 import { getVideoUrl } from '../services/api';
 import { SelectionProvider, useSelection } from '../context/SelectionContext';
+import { ExplanationProvider } from '../context/ExplanationContext';
 
 const DashboardContent = ({ jobId, results, onBack }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [seekToTime, setSeekToTime] = useState(null);
-  const { selectedItem, selectedType, clearSelection } = useSelection();
+  const { selectedItem, selectedType, selectTrack, clearSelection } = useSelection();
 
   const handleTimeUpdate = (time) => {
     setCurrentTime(time);
@@ -155,11 +156,17 @@ const DashboardContent = ({ jobId, results, onBack }) => {
               selectedType={selectedType}
               videoMetadata={results}
               allTracks={results.all_tracks || []}
+              allEvents={results.all_events || []}
+              allAnomalies={results.all_anomalies || []}
+              onSeek={handleSeek}
+              onSelectTrack={selectTrack}
+              jobId={jobId}
             />
             
             <EventTimeline
               anomalies={results.all_anomalies || []}
               events={results.all_events || []}
+              scenes={results.all_scenes || []}
               videoDuration={results.video_duration}
               currentTime={currentTime}
               onSeek={handleSeek}
@@ -238,10 +245,12 @@ const DashboardContent = ({ jobId, results, onBack }) => {
   );
 };
 
-// Wrapper with SelectionProvider
+// Wrapper with SelectionProvider and ExplanationProvider
 const DashboardView = (props) => (
   <SelectionProvider>
-    <DashboardContent {...props} />
+    <ExplanationProvider jobId={props.jobId}>
+      <DashboardContent {...props} />
+    </ExplanationProvider>
   </SelectionProvider>
 );
 

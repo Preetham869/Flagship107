@@ -5,14 +5,15 @@ Handles job state, file storage, and processing coordination
 import asyncio
 import json
 import logging
+import re
 import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 import cv2
 
-from app.models.job import JobStatus, ProcessingProgress
+from app.models.job import JobStatus, ProcessingProgress, ExplanationStatus
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,14 @@ class Job:
         self.started_at: Optional[datetime] = None
         self.completed_at: Optional[datetime] = None
         self.result: Optional[Dict[str, Any]] = None
+        
+        # AI Explanation state
+        self.explanation_status = ExplanationStatus.NOT_GENERATED
+        self.explanation_stage: Optional[str] = None
+        self.explanation_error: Optional[str] = None
+        self.explanation_result: Optional[Dict[str, Any]] = None
+        self.previous_explanation_result: Optional[Dict[str, Any]] = None
+        self.explanation_task: Optional[asyncio.Task] = None
         
         # Video metadata
         self.video_duration: Optional[float] = None
@@ -99,7 +108,60 @@ class JobManager:
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
+        # Configure allowed search roots for uploads and outputs
+        backend_root = Path(__file__).parent.parent.parent.resolve()
+        project_root = backend_root.parent.resolve()
+        
+        self.allowed_upload_dirs: List[Path] = [
+            self.upload_dir.resolve(),
+            (backend_root / "uploads").resolve(),
+            (project_root / "uploads").resolve(),
+        ]
+        self.allowed_output_dirs: List[Path] = [
+            self.output_dir.resolve(),
+            (backend_root / "outputs").resolve(),
+            (project_root / "outputs").resolve(),
+        ]
+        
         logger.info(f"JobManager initialized: uploads={self.upload_dir}, outputs={self.output_dir}")
+
+    def is_safe_path(self, path: Path) -> bool:
+        """Verify that resolved file path is strictly within permitted directories"""
+        try:
+            resolved = path.resolve()
+            for allowed in self.allowed_upload_dirs:
+                if resolved.is_relative_to(allowed) and resolved.is_file():
+                    return True
+        except (ValueError, RuntimeError):
+            pass
+        return False
+
+    def find_video_file(self, job_id: str) -> Optional[Path]:
+        """
+        Locate video file for job_id safely on disk across primary and fallback directories.
+        Guards against directory traversal.
+        """
+        if not re.match(r'^[a-zA-Z0-9_-]+$', job_id):
+            return None
+
+        # Check in-memory job first
+        if job_id in self.jobs and self.jobs[job_id].file_path and self.jobs[job_id].file_path.exists():
+            return self.jobs[job_id].file_path
+
+        allowed_exts = [".mp4", ".avi", ".mov", ".mkv", ".webm"]
+
+        for search_dir in self.allowed_upload_dirs:
+            if not search_dir.exists():
+                continue
+            for ext in allowed_exts:
+                candidate = (search_dir / f"{job_id}{ext}").resolve()
+                try:
+                    if candidate.is_relative_to(search_dir) and candidate.is_file():
+                        return candidate
+                except (ValueError, RuntimeError):
+                    continue
+
+        return None
     
     async def create_job(self, filename: str, file_content: bytes) -> Job:
         """
@@ -139,8 +201,39 @@ class JobManager:
             return job
     
     async def get_job(self, job_id: str) -> Optional[Job]:
-        """Get job by ID"""
-        return self.jobs.get(job_id)
+        """Get job by ID, reconstructing from disk if available"""
+        if job_id in self.jobs:
+            return self.jobs[job_id]
+
+        video_path = self.find_video_file(job_id)
+        if video_path and video_path.exists():
+            job = Job(
+                job_id=job_id,
+                filename=video_path.name,
+                file_path=video_path,
+                file_size=video_path.stat().st_size,
+            )
+            # Reconnect result and explanation if already on disk
+            res = await self.get_result(job_id)
+            if res:
+                job.result = res
+                job.status = JobStatus.COMPLETED
+                job.completed_at = datetime.now()
+                job.progress.percent_complete = 100.0
+                job.progress.stage = "completed"
+
+            # Check explanation
+            exp = await self.get_explanation(job_id)
+            if exp:
+                job.explanation_result = exp
+                job.explanation_status = ExplanationStatus.COMPLETED
+                job.explanation_stage = "Completed"
+
+            self.jobs[job_id] = job
+            logger.info(f"Reconstructed job {job_id} from disk files")
+            return job
+
+        return None
     
     async def update_status(self, job_id: str, status: JobStatus, error: Optional[str] = None):
         """Update job status"""
@@ -193,29 +286,125 @@ class JobManager:
                 logger.info(f"Saved result for job {job_id} to {result_path}")
     
     async def get_result(self, job_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get processing result for a job
-        
-        Returns:
-            Result dictionary or None if not available
-        """
+        """Get processing result from memory or disk"""
+        if job_id in self.jobs and self.jobs[job_id].result:
+            return self.jobs[job_id].result
+
+        if not re.match(r'^[a-zA-Z0-9_-]+$', job_id):
+            return None
+
+        for out_dir in self.allowed_output_dirs:
+            if not out_dir.exists():
+                continue
+            candidate = (out_dir / f"{job_id}_result.json").resolve()
+            try:
+                if candidate.is_relative_to(out_dir) and candidate.is_file():
+                    with open(candidate, "r") as f:
+                        res = json.load(f)
+                        if job_id in self.jobs:
+                            self.jobs[job_id].result = res
+                        return res
+            except Exception as e:
+                logger.warning(f"Failed to read result file {candidate}: {e}")
+
+        return None
+    
+    async def update_explanation_status(
+        self,
+        job_id: str,
+        status: ExplanationStatus,
+        stage: Optional[str] = None,
+        error: Optional[str] = None,
+    ):
+        """Update job explanation status"""
+        async with self._lock:
+            if job_id in self.jobs:
+                job = self.jobs[job_id]
+                job.explanation_status = status
+                if stage is not None:
+                    job.explanation_stage = stage
+                if error is not None:
+                    job.explanation_error = error
+                elif status in (ExplanationStatus.GENERATING, ExplanationStatus.COMPLETED):
+                    job.explanation_error = None
+
+                logger.info(
+                    f"Job {job_id} explanation status: {status.value} (stage={stage}, error={error})"
+                )
+
+    async def save_explanation(self, job_id: str, explanation: Dict[str, Any]):
+        """Save AI explanation result to disk and job state"""
+        async with self._lock:
+            if job_id in self.jobs:
+                job = self.jobs[job_id]
+                explanation_path = self.output_dir / f"{job_id}_explanation.json"
+                with open(explanation_path, "w") as f:
+                    json.dump(explanation, f, indent=2, default=str)
+
+                job.explanation_result = explanation
+                job.explanation_status = ExplanationStatus.COMPLETED
+                job.explanation_stage = "Completed"
+                job.explanation_error = None
+                logger.info(f"Saved explanation for job {job_id} to {explanation_path}")
+
+    async def get_explanation(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """Get cached explanation or load from disk across permitted output directories"""
         job = await self.get_job(job_id)
         if not job:
             return None
-        
-        # Return cached result if available
-        if job.result:
-            return job.result
-        
-        # Try loading from file
-        result_path = self.output_dir / f"{job_id}_result.json"
-        if result_path.exists():
-            with open(result_path) as f:
-                job.result = json.load(f)
-                return job.result
-        
+
+        if job.explanation_result:
+            return job.explanation_result
+
+        for out_dir in self.allowed_output_dirs:
+            if not out_dir.exists():
+                continue
+            explanation_path = (out_dir / f"{job_id}_explanation.json").resolve()
+            if explanation_path.exists() and explanation_path.is_file():
+                try:
+                    with open(explanation_path, "r") as f:
+                        exp = json.load(f)
+                        job.explanation_result = exp
+                        job.explanation_status = ExplanationStatus.COMPLETED
+                        job.explanation_stage = "Completed"
+                        return exp
+                except Exception as e:
+                    logger.warning(f"Failed to read explanation file for job {job_id}: {e}")
+
         return None
-    
+
+    async def get_explanation_state(self, job_id: str) -> Dict[str, Any]:
+        """Get full explanation state including recovery from disk"""
+        job = await self.get_job(job_id)
+        if not job:
+            return {
+                "status": ExplanationStatus.NOT_GENERATED.value,
+                "stage": None,
+                "error": "Job not found",
+                "report": None,
+                "previous_report": None,
+            }
+
+        # Check if explanation already exists on disk
+        if not job.explanation_result:
+            explanation_path = self.output_dir / f"{job_id}_explanation.json"
+            if explanation_path.exists():
+                try:
+                    with open(explanation_path) as f:
+                        job.explanation_result = json.load(f)
+                        job.explanation_status = ExplanationStatus.COMPLETED
+                        job.explanation_stage = "Completed"
+                except Exception as e:
+                    logger.warning(f"Failed to recover explanation from file: {e}")
+
+        return {
+            "status": job.explanation_status.value,
+            "stage": job.explanation_stage,
+            "error": job.explanation_error,
+            "report": job.explanation_result,
+            "previous_report": job.previous_explanation_result,
+        }
+
     async def cleanup_job(self, job_id: str):
         """Delete job files (for future use)"""
         async with self._lock:
@@ -230,6 +419,11 @@ class JobManager:
                 result_path = self.output_dir / f"{job_id}_result.json"
                 if result_path.exists():
                     result_path.unlink()
+
+                # Delete explanation file
+                explanation_path = self.output_dir / f"{job_id}_explanation.json"
+                if explanation_path.exists():
+                    explanation_path.unlink()
                 
                 # Remove from memory
                 del self.jobs[job_id]

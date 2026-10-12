@@ -204,12 +204,107 @@ class TestGetResults:
 
 
 class TestGetVideo:
-    """Test get video endpoint"""
+    """Test get video endpoint with HTTP Byte-Range support"""
     
     def test_get_video_nonexistent_job(self, client):
         """Test getting video for non-existent job"""
         response = client.get("/api/v1/videos/fake-job-id/video")
         assert response.status_code == 404
+
+    def test_get_video_full_stream(self, client, sample_video_bytes):
+        """Test getting full video without Range header"""
+        with patch('cv2.VideoCapture') as mock_cap:
+            mock_instance = Mock()
+            mock_instance.isOpened.return_value = True
+            mock_instance.get.return_value = 0
+            mock_instance.release.return_value = None
+            mock_cap.return_value = mock_instance
+
+            upload_response = client.post(
+                "/api/v1/videos/upload",
+                files={"file": ("stream_test.mp4", sample_video_bytes, "video/mp4")}
+            )
+            job_id = upload_response.json()["job_id"]
+
+            response = client.get(f"/api/v1/videos/{job_id}/video")
+            assert response.status_code == 200
+            assert response.headers["accept-ranges"] == "bytes"
+            assert response.headers["content-type"] == "video/mp4"
+            assert int(response.headers["content-length"]) == len(sample_video_bytes)
+
+    def test_get_video_byte_range(self, client, sample_video_bytes):
+        """Test getting partial video with Range header"""
+        with patch('cv2.VideoCapture') as mock_cap:
+            mock_instance = Mock()
+            mock_instance.isOpened.return_value = True
+            mock_instance.get.return_value = 0
+            mock_instance.release.return_value = None
+            mock_cap.return_value = mock_instance
+
+            upload_response = client.post(
+                "/api/v1/videos/upload",
+                files={"file": ("stream_test.mp4", sample_video_bytes, "video/mp4")}
+            )
+            job_id = upload_response.json()["job_id"]
+
+            # Request first 100 bytes
+            total_size = len(sample_video_bytes)
+            response = client.get(
+                f"/api/v1/videos/{job_id}/video",
+                headers={"Range": "bytes=0-99"}
+            )
+            assert response.status_code == 206
+            assert response.headers["accept-ranges"] == "bytes"
+            assert response.headers["content-range"] == f"bytes 0-99/{total_size}"
+            assert response.headers["content-length"] == "100"
+            assert response.content == sample_video_bytes[0:100]
+
+    def test_get_video_range_from_offset(self, client, sample_video_bytes):
+        """Test getting partial video from offset to end"""
+        with patch('cv2.VideoCapture') as mock_cap:
+            mock_instance = Mock()
+            mock_instance.isOpened.return_value = True
+            mock_instance.get.return_value = 0
+            mock_instance.release.return_value = None
+            mock_cap.return_value = mock_instance
+
+            upload_response = client.post(
+                "/api/v1/videos/upload",
+                files={"file": ("stream_test.mp4", sample_video_bytes, "video/mp4")}
+            )
+            job_id = upload_response.json()["job_id"]
+
+            total_size = len(sample_video_bytes)
+            offset = 150
+            response = client.get(
+                f"/api/v1/videos/{job_id}/video",
+                headers={"Range": f"bytes={offset}-"}
+            )
+            assert response.status_code == 206
+            assert response.headers["content-range"] == f"bytes {offset}-{total_size - 1}/{total_size}"
+            assert response.content == sample_video_bytes[offset:]
+
+    def test_get_video_range_out_of_bounds(self, client, sample_video_bytes):
+        """Test requesting Range beyond file size returns 416"""
+        with patch('cv2.VideoCapture') as mock_cap:
+            mock_instance = Mock()
+            mock_instance.isOpened.return_value = True
+            mock_instance.get.return_value = 0
+            mock_instance.release.return_value = None
+            mock_cap.return_value = mock_instance
+
+            upload_response = client.post(
+                "/api/v1/videos/upload",
+                files={"file": ("stream_test.mp4", sample_video_bytes, "video/mp4")}
+            )
+            job_id = upload_response.json()["job_id"]
+
+            response = client.get(
+                f"/api/v1/videos/{job_id}/video",
+                headers={"Range": "bytes=999999-"}
+            )
+            assert response.status_code == 416
+            assert "content-range" in response.headers
 
 
 class TestGetMetadata:
@@ -246,3 +341,90 @@ class TestGetMetadata:
             assert data["width"] == 640
             assert data["height"] == 480
             assert data["fps"] == 24.0
+
+
+class TestExplanationEndpoints:
+    """Test AI investigation explanation endpoints"""
+
+    def test_get_explanation_nonexistent_job(self, client):
+        """Test getting explanation for non-existent job"""
+        response = client.get("/api/v1/videos/fake-job-id/explanation")
+        assert response.status_code == 404
+
+    def test_generate_explanation_not_completed(self, client, sample_video_bytes):
+        """Test generating explanation when video processing is not yet completed"""
+        with patch('cv2.VideoCapture') as mock_cap:
+            mock_instance = Mock()
+            mock_instance.isOpened.return_value = True
+            mock_instance.get.return_value = 0
+            mock_instance.release.return_value = None
+            mock_cap.return_value = mock_instance
+
+            upload_response = client.post(
+                "/api/v1/videos/upload",
+                files={"file": ("test.mp4", sample_video_bytes, "video/mp4")}
+            )
+            job_id = upload_response.json()["job_id"]
+
+            response = client.post(f"/api/v1/videos/{job_id}/explanation")
+            assert response.status_code == 400
+            assert "not completed" in response.json()["detail"].lower()
+
+    def test_get_and_cache_explanation(self, client, sample_video_bytes):
+        """Test that existing cached explanation is returned immediately without re-triggering"""
+        from app.models.job import JobStatus, ExplanationStatus
+        from app.services.job_manager import job_manager
+
+        with patch('cv2.VideoCapture') as mock_cap:
+            mock_instance = Mock()
+            mock_instance.isOpened.return_value = True
+            mock_instance.get.return_value = 0
+            mock_instance.release.return_value = None
+            mock_cap.return_value = mock_instance
+
+            upload_response = client.post(
+                "/api/v1/videos/upload",
+                files={"file": ("test.mp4", sample_video_bytes, "video/mp4")}
+            )
+            job_id = upload_response.json()["job_id"]
+
+            import asyncio
+            async def setup_completed_job():
+                job = await job_manager.get_job(job_id)
+                job.status = JobStatus.COMPLETED
+                sample_report = {
+                    "executive_summary": "Test plain-English summary",
+                    "video_overview": {"duration_formatted": "0:10.00"},
+                    "chronological_events": [],
+                    "track_analyses": [],
+                    "evidence_and_limitations": {
+                        "yolo_detections": {"count": 10},
+                        "tracker_telemetry": {"confirmed_tracks_count": 2},
+                        "detector_anomalies": {"count": 0},
+                        "correlated_events": {"count": 0},
+                        "investigation_disclaimer": "Test notice",
+                    },
+                    "final_assessment": "Test final assessment",
+                }
+                await job_manager.save_explanation(job_id, sample_report)
+
+            asyncio.run(setup_completed_job())
+
+            # GET explanation should return completed report
+            get_resp = client.get(f"/api/v1/videos/{job_id}/explanation")
+            assert get_resp.status_code == 200
+            data = get_resp.json()
+            assert data["status"] == "completed"
+            assert data["report"] is not None
+            assert data["report"]["executive_summary"] == "Test plain-English summary"
+
+            # POST explanation with force_regenerate=False should return cached report
+            post_resp = client.post(
+                f"/api/v1/videos/{job_id}/explanation",
+                json={"force_regenerate": False}
+            )
+            assert post_resp.status_code == 200
+            post_data = post_resp.json()
+            assert post_data["status"] == "completed"
+            assert post_data["executive_summary"] == "Test plain-English summary"
+
