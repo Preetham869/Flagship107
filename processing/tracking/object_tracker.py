@@ -69,9 +69,20 @@ class ObjectTracker:
         # Track statistics
         self.active_track_ids = set()
         self.total_tracks_seen = 0
+        self._next_unconfirmed_id = -1
+
+    def _get_next_unconfirmed_id(self) -> int:
+        """Generate a unique negative ID for unconfirmed detections to avoid track collision"""
+        uid = self._next_unconfirmed_id
+        self._next_unconfirmed_id -= 1
+        return uid
 
     def track(
-        self, frame: np.ndarray, classes: Optional[List[int]] = None, persist: bool = True
+        self,
+        frame: np.ndarray,
+        classes: Optional[List[int]] = None,
+        persist: bool = True,
+        include_unconfirmed: bool = False,
     ) -> List[Dict]:
         """
         Track objects in a single frame with persistent IDs
@@ -80,14 +91,16 @@ class ObjectTracker:
             frame: Input frame as numpy array (H, W, C) in BGR format
             classes: List of class IDs to track (None for all classes)
             persist: Whether to persist tracks across frames
+            include_unconfirmed: Whether to include unconfirmed detections (with unique negative IDs)
 
         Returns:
             List of tracks, each containing:
-            - track_id: Persistent tracking ID
+            - track_id: Persistent tracking ID (positive int for confirmed, unique negative int for unconfirmed)
             - bbox: [x1, y1, x2, y2]
             - confidence: float
             - class_id: int
             - class_name: str
+            - confirmed: bool
         """
         if frame is None or frame.size == 0:
             logger.warning("Empty frame provided to tracker")
@@ -117,29 +130,38 @@ class ObjectTracker:
                     confidences = result.boxes.conf.cpu().numpy()
                     class_ids = result.boxes.cls.cpu().numpy().astype(int)
 
-                    # Get track IDs (if available)
+                    # Get track IDs: only use confirmed IDs from tracker
                     if result.boxes.id is not None:
                         track_ids = result.boxes.id.cpu().numpy().astype(int)
+                        is_confirmed = True
+                    elif include_unconfirmed:
+                        # Assign unique negative IDs that never collide across frames
+                        track_ids = [self._get_next_unconfirmed_id() for _ in range(len(boxes))]
+                        is_confirmed = False
                     else:
-                        # Fallback: use sequential IDs if tracking not available
-                        track_ids = np.arange(len(boxes))
+                        # Exclude unconfirmed detections from persistent trajectory tracking
+                        track_ids = None
+                        is_confirmed = False
 
-                    for box, conf, cls_id, track_id in zip(
-                        boxes, confidences, class_ids, track_ids
-                    ):
-                        track = {
-                            "track_id": int(track_id),
-                            "bbox": box.tolist(),
-                            "confidence": float(conf),
-                            "class_id": int(cls_id),
-                            "class_name": self.model.names[int(cls_id)],
-                        }
-                        tracks.append(track)
+                    if track_ids is not None:
+                        for box, conf, cls_id, track_id in zip(
+                            boxes, confidences, class_ids, track_ids
+                        ):
+                            track = {
+                                "track_id": int(track_id),
+                                "bbox": box.tolist(),
+                                "confidence": float(conf),
+                                "class_id": int(cls_id),
+                                "class_name": self.model.names[int(cls_id)],
+                                "confirmed": is_confirmed,
+                            }
+                            tracks.append(track)
 
-                        # Update statistics
-                        self.active_track_ids.add(int(track_id))
-                        if int(track_id) > self.total_tracks_seen:
-                            self.total_tracks_seen = int(track_id)
+                            if is_confirmed:
+                                # Update statistics only for confirmed tracks
+                                self.active_track_ids.add(int(track_id))
+                                if int(track_id) > self.total_tracks_seen:
+                                    self.total_tracks_seen = int(track_id)
 
             return tracks
 
@@ -185,6 +207,7 @@ class ObjectTracker:
         """Reset tracking state"""
         self.active_track_ids.clear()
         self.total_tracks_seen = 0
+        self._next_unconfirmed_id = -1
         logger.info("Tracker state reset")
 
 

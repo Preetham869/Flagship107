@@ -15,6 +15,15 @@ class JobStatus(str, Enum):
     FAILED = "failed"
 
 
+class ExplanationStatus(str, Enum):
+    """AI investigation explanation generation status"""
+    NOT_GENERATED = "not_generated"
+    QUEUED = "queued"
+    GENERATING = "generating"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 class VideoUploadResponse(BaseModel):
     """Response from video upload"""
     job_id: str = Field(..., description="Unique job identifier")
@@ -53,3 +62,20 @@ class ProcessingProgress(BaseModel):
     total_frames: int = 0
     percent_complete: float = 0.0
     stage: str = "initializing"
+
+
+class ExplanationRequest(BaseModel):
+    """Request to start or regenerate an AI explanation"""
+    force_regenerate: bool = Field(False, description="Whether to recompute even if a cached report exists")
+
+
+class ExplanationStatusResponse(BaseModel):
+    """Response for explanation status check and report delivery"""
+    job_id: str
+    status: ExplanationStatus
+    stage: Optional[str] = None
+    error: Optional[str] = None
+    report: Optional[Dict[str, Any]] = None
+    previous_report: Optional[Dict[str, Any]] = None
+    fingerprint: Optional[str] = None
+

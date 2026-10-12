@@ -100,8 +100,8 @@ const IntelligencePanel = ({ results, onSeek, jobId }) => {
 
       {/* Tab Content */}
       <div style={{
-        minHeight: '400px',
-        maxHeight: '600px',
+        minHeight: '420px',
+        maxHeight: '780px',
         overflowY: 'auto'
       }}>
         <ActiveComponent results={results} onSeek={onSeek} jobId={jobId} />

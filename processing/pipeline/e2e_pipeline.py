@@ -234,6 +234,10 @@ class EndToEndPipeline:
         
         logger.info(f"Video: {width}x{height} @ {fps:.2f}fps, {total_frames} frames ({duration:.2f}s)")
         
+        # Propagate frame dimensions to behavior analyzer and anomaly detector for scale awareness
+        self.behavior_analyzer.set_frame_dimensions(width, height)
+        self.anomaly_detector.set_frame_dimensions(width, height)
+        
         # Initialize output video writer if requested
         video_writer = None
         if output_video_path:
@@ -320,6 +324,8 @@ class EndToEndPipeline:
                 
                 # M3: Behavior Analysis
                 behaviors = self.behavior_analyzer.update(tracks, timestamp)
+                for b in behaviors:
+                    b["frame_id"] = frame_idx
                 result.all_behaviors.append(behaviors)
                 result.m3_total_behaviors += len(behaviors)
                 

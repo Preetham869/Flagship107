@@ -3,9 +3,10 @@
  */
 import { useSelection } from '../../context/SelectionContext';
 import { EmptyState } from '../LoadingStates';
+import { getTrackColor } from '../../utils/trackColors';
 
 const EventsTab = ({ results, onSeek }) => {
-  const { selectedItem, selectEvent } = useSelection();
+  const { selectedItem, selectEvent, selectTrack } = useSelection();
   const events = results.all_events || [];
 
   const getEventIcon = (eventType) => {
@@ -216,19 +217,42 @@ const EventsTab = ({ results, onSeek }) => {
                       Participating Tracks
                     </div>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {event.participating_track_ids.map(trackId => (
-                        <span key={trackId} style={{
-                          backgroundColor: '#263238',
-                          color: '#58a6ff',
-                          padding: '4px 10px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          border: '1px solid #37474f'
-                        }}>
-                          Track #{trackId}
-                        </span>
-                      ))}
+                      {event.participating_track_ids.map(trackId => {
+                        const color = getTrackColor(trackId, true);
+                        return (
+                          <span
+                            key={trackId}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectTrack({ track_id: trackId });
+                            }}
+                            title={`Select Track #${trackId}`}
+                            style={{
+                              backgroundColor: `${color}22`,
+                              color: color,
+                              border: `1px solid ${color}66`,
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <span style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: color,
+                              display: 'inline-block'
+                            }} />
+                            Track #{trackId}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

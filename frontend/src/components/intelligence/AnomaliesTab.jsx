@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useSelection } from '../../context/SelectionContext';
 import { EmptyState } from '../LoadingStates';
+import { getTrackColor } from '../../utils/trackColors';
 
 const AnomaliesTab = ({ results, onSeek }) => {
   const [selectedSeverity, setSelectedSeverity] = useState('all');
@@ -37,7 +38,9 @@ const AnomaliesTab = ({ results, onSeek }) => {
   };
 
   const isSelected = (anomaly) => {
-    return selectedItem?.event_id === anomaly.event_id;
+    if (!selectedItem) return false;
+    if (selectedItem.anomaly_id && selectedItem.anomaly_id === anomaly.anomaly_id) return true;
+    return selectedItem.timestamp === anomaly.timestamp && String(selectedItem.track_id) === String(anomaly.track_id);
   };
 
   return (
@@ -168,8 +171,18 @@ const AnomaliesTab = ({ results, onSeek }) => {
                         {(anomaly.anomaly_score * 100).toFixed(0)}%
                       </span>
                     </div>
-                    <div style={{ fontSize: '12px', color: '#90a4ae' }}>
-                      Track #{anomaly.track_id} • {anomaly.timestamp.toFixed(2)}s
+                    <div style={{ fontSize: '12px', color: '#90a4ae', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        backgroundColor: getTrackColor(anomaly.track_id),
+                        color: '#0d1117',
+                        padding: '1px 6px',
+                        borderRadius: '3px',
+                        fontWeight: '700',
+                        fontSize: '11px',
+                      }}>
+                        #{anomaly.track_id}
+                      </span>
+                      <span>• {anomaly.timestamp.toFixed(2)}s</span>
                     </div>
                   </div>
                 </div>

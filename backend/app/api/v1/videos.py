@@ -2,15 +2,22 @@
 Video processing API endpoints
 """
 import logging
-from typing import Dict, Any
-from fastapi import APIRouter, UploadFile, File, HTTPException, Path as PathParam
-from fastapi.responses import JSONResponse, FileResponse
+import mimetypes
+import re
+from typing import Dict, Any, Optional
+import asyncio
+from pathlib import Path
+from fastapi import APIRouter, UploadFile, File, HTTPException, Path as PathParam, BackgroundTasks, Request, Response
+from fastapi.responses import StreamingResponse, FileResponse
 
 from app.models.job import (
     VideoUploadResponse,
     ProcessRequest,
     JobStatusResponse,
     JobStatus,
+    ExplanationStatus,
+    ExplanationRequest,
+    ExplanationStatusResponse,
 )
 from app.services.job_manager import job_manager
 from app.services.processor import video_processor
@@ -202,27 +209,128 @@ async def get_job_results(job_id: str = PathParam(..., description="Job identifi
 
 
 @router.get("/{job_id}/video")
-async def get_video(job_id: str = PathParam(..., description="Job identifier")):
+async def get_video(
+    request: Request,
+    job_id: str = PathParam(..., description="Job identifier"),
+):
     """
-    Get original uploaded video
+    Get original uploaded video with HTTP Byte-Range support for streaming and seeking.
+    
+    Supports:
+    - 200 OK with Accept-Ranges for standard requests
+    - 206 Partial Content for Range requests (e.g. bytes=0-, bytes=1024-2048)
+    - 416 Range Not Satisfiable for out-of-bounds ranges
+    - Path safety validation preventing directory traversal
+    - Dynamic MIME type detection
     
     Args:
+        request: FastAPI Request containing optional Range header
         job_id: Job identifier
         
     Returns:
-        Video file
+        StreamingResponse (206) or FileResponse (200)
     """
     job = await job_manager.get_job(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    if not job.file_path.exists():
+    file_path: Optional[Path] = None
+    filename: str = f"{job_id}.mp4"
+
+    if job and job.file_path and job.file_path.exists():
+        file_path = job.file_path
+        filename = job.filename
+    else:
+        file_path = job_manager.find_video_file(job_id)
+        if file_path:
+            filename = file_path.name
+
+    if not file_path or not file_path.exists():
+        logger.warning(f"Video file not found for job {job_id}")
         raise HTTPException(status_code=404, detail="Video file not found")
-    
-    return FileResponse(
-        path=str(job.file_path),
-        media_type="video/mp4",
-        filename=job.filename,
+
+    resolved_path = file_path.resolve()
+    if not job_manager.is_safe_path(resolved_path):
+        logger.error(f"Access denied to file outside permitted storage: {resolved_path}")
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    file_size = resolved_path.stat().st_size
+    mime_type, _ = mimetypes.guess_type(str(resolved_path))
+    content_type = mime_type or "video/mp4"
+
+    # Sanitize filename for header
+    safe_filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
+
+    range_header = request.headers.get("Range")
+
+    if not range_header:
+        # Full content response with byte-range capability advertised
+        return FileResponse(
+            path=str(resolved_path),
+            media_type=content_type,
+            filename=safe_filename,
+            headers={
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(file_size),
+                "Content-Disposition": f'inline; filename="{safe_filename}"',
+            },
+        )
+
+    # Parse Range: bytes=start-end
+    range_match = re.match(r"^bytes=(\d*)-(\d*)$", range_header.strip())
+    if not range_match:
+        return Response(
+            status_code=416,
+            headers={"Content-Range": f"bytes */{file_size}"},
+            content="Range Not Satisfiable",
+        )
+
+    start_str, end_str = range_match.groups()
+
+    if start_str and end_str:
+        start = int(start_str)
+        end = int(end_str)
+    elif start_str:
+        start = int(start_str)
+        end = file_size - 1
+    elif end_str:
+        start = max(0, file_size - int(end_str))
+        end = file_size - 1
+    else:
+        start = 0
+        end = file_size - 1
+
+    if start >= file_size or start > end:
+        return Response(
+            status_code=416,
+            headers={"Content-Range": f"bytes */{file_size}"},
+            content="Range Not Satisfiable",
+        )
+
+    end = min(end, file_size - 1)
+    chunk_size = (end - start) + 1
+
+    def file_chunk_generator(path: Path, offset: int, length: int, block_size: int = 256 * 1024):
+        with open(path, "rb") as f:
+            f.seek(offset)
+            bytes_left = length
+            while bytes_left > 0:
+                to_read = min(bytes_left, block_size)
+                data = f.read(to_read)
+                if not data:
+                    break
+                bytes_left -= len(data)
+                yield data
+
+    headers = {
+        "Content-Range": f"bytes {start}-{end}/{file_size}",
+        "Accept-Ranges": "bytes",
+        "Content-Length": str(chunk_size),
+        "Content-Type": content_type,
+        "Content-Disposition": f'inline; filename="{safe_filename}"',
+    }
+
+    return StreamingResponse(
+        file_chunk_generator(resolved_path, start, chunk_size),
+        status_code=206,
+        headers=headers,
     )
 
 
@@ -252,31 +360,133 @@ async def get_video_metadata(job_id: str = PathParam(..., description="Job ident
     }
 
 
-@router.post("/{job_id}/explanation")
-async def generate_explanation(job_id: str = PathParam(..., description="Job identifier")) -> Dict[str, Any]:
+async def _run_explanation_background(job_id: str):
+    """Background task for generating AI investigation report"""
+    logger.info(f"Starting background explanation generation for job {job_id}")
+    try:
+        await job_manager.update_explanation_status(
+            job_id, ExplanationStatus.GENERATING, stage="Extracting scene evidence & telemetry"
+        )
+        
+        result = await job_manager.get_result(job_id)
+        if not result:
+            await job_manager.update_explanation_status(
+                job_id, ExplanationStatus.FAILED, error="Processing results not found"
+            )
+            return
+
+        all_scenes = result.get("all_scenes", [])
+        from processing.context.schemas import ContextualScene
+        if all_scenes and len(all_scenes) > 0:
+            scene = ContextualScene.from_dict(all_scenes[0])
+        else:
+            # Construct baseline scene representing empty / zero-anomaly video
+            scene = ContextualScene(
+                scene_id=f"scene_{job_id[:8]}",
+                scene_number=1,
+                start_frame=0,
+                end_frame=int(result.get("frames_processed") or 0),
+                start_timestamp=0.0,
+                end_timestamp=float(result.get("video_duration") or 0.0),
+                summary="Baseline video scene without segmented anomalies",
+            )
+
+        await job_manager.update_explanation_status(
+            job_id, ExplanationStatus.GENERATING, stage="Querying local Ollama model (qwen3:8b)"
+        )
+
+        from processing.llm.explanations import ExplanationGenerator
+        from processing.llm.investigation_report import build_investigation_report
+
+        generator = ExplanationGenerator()
+        explanation = await generator.explain_scene(scene)
+
+        await job_manager.update_explanation_status(
+            job_id, ExplanationStatus.GENERATING, stage="Structuring evidence report"
+        )
+
+        report = build_investigation_report(result, explanation.to_dict())
+        await job_manager.save_explanation(job_id, report)
+        logger.info(f"Successfully generated and saved explanation report for job {job_id}")
+
+    except Exception as e:
+        logger.error(f"Failed to generate explanation in background for {job_id}: {e}", exc_info=True)
+        # Attempt deterministic fallback report so evidence workflow is preserved
+        try:
+            result = await job_manager.get_result(job_id)
+            if result:
+                from processing.llm.investigation_report import build_investigation_report
+                fallback_report = build_investigation_report(
+                    result,
+                    scene_explanation={
+                        "model_name": "deterministic-fallback",
+                        "model_version": "v1.0",
+                        "is_fallback": True,
+                        "fallback_reason": str(e),
+                        "overview": "Deterministic evidence-driven analysis (Ollama inference unavailable).",
+                    }
+                )
+                await job_manager.save_explanation(job_id, fallback_report)
+                logger.info(f"Saved deterministic fallback report for job {job_id} after error: {e}")
+                return
+        except Exception as fallback_err:
+            logger.error(f"Fallback generation also failed for {job_id}: {fallback_err}")
+            
+        await job_manager.update_explanation_status(
+            job_id, ExplanationStatus.FAILED, error=str(e)
+        )
+
+
+@router.get("/{job_id}/explanation", response_model=ExplanationStatusResponse)
+async def get_explanation(
+    job_id: str = PathParam(..., description="Job identifier")
+) -> ExplanationStatusResponse:
     """
-    Generate M9 AI explanation for a completed job's M8 scene
+    Get status or cached result of AI investigation explanation
     
-    This endpoint:
-    1. Loads existing M1-M8 processing results (does NOT rerun pipeline)
-    2. Extracts the M8 contextual scene
-    3. Invokes Ollama/qwen3:8b LLM to generate natural language explanation
-    4. Returns structured explanation with observed/derived sections
+    Args:
+        job_id: Job identifier
+        
+    Returns:
+        ExplanationStatusResponse with status, stage, error, report, and previous_report
+    """
+    job = await job_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    state = await job_manager.get_explanation_state(job_id)
+    return ExplanationStatusResponse(
+        job_id=job_id,
+        status=state["status"],
+        stage=state["stage"],
+        error=state["error"],
+        report=state["report"],
+        previous_report=state["previous_report"],
+    )
+
+
+@router.post("/{job_id}/explanation")
+async def generate_explanation(
+    job_id: str = PathParam(..., description="Job identifier"),
+    request: ExplanationRequest = ExplanationRequest(),
+) -> Dict[str, Any]:
+    """
+    Start or retrieve AI investigation report generation
+    
+    - Reuses existing cached report if available and force_regenerate is False
+    - Dispatches asynchronous background generation to keep event loop free
+    - Prevents duplicate simultaneous generation requests
+    - Preserves previous report during regeneration
     
     Args:
         job_id: Job identifier (must have completed processing)
+        request: Explanation configuration (force_regenerate flag)
         
     Returns:
-        SceneExplanation with LLM-generated narrative
-        
-    Raises:
-        404: Job not found or results not available
-        400: Job not completed or no M8 scene available
-        503: Ollama/LLM service unavailable
+        Explanation status dictionary and report if already available
     """
-    logger.info(f"Generating M9 explanation for job {job_id}")
+    logger.info(f"Received explanation request for job {job_id} (force_regenerate={request.force_regenerate})")
     
-    # 1. Validate job exists and is completed
     job = await job_manager.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -287,61 +497,43 @@ async def generate_explanation(job_id: str = PathParam(..., description="Job ide
             detail=f"Job not completed. Current status: {job.status.value}. Complete processing first."
         )
     
-    # 2. Load existing results
-    result = await job_manager.get_result(job_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="Results not found")
+    # Check if existing report is available and regeneration is not requested
+    existing_report = await job_manager.get_explanation(job_id)
+    if existing_report and not request.force_regenerate:
+        logger.info(f"Returning cached explanation report for job {job_id}")
+        return {
+            "status": ExplanationStatus.COMPLETED.value,
+            "report": existing_report,
+            **existing_report,
+        }
     
-    # 3. Extract M8 scene
-    all_scenes = result.get("all_scenes", [])
-    if not all_scenes or len(all_scenes) == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="No M8 contextual scene available. Processing may have failed at M8 stage."
-        )
+    # If already generating, prevent duplicate concurrent runs
+    if job.explanation_status == ExplanationStatus.GENERATING:
+        logger.info(f"Explanation for job {job_id} is already generating, returning current status")
+        return {
+            "job_id": job_id,
+            "status": ExplanationStatus.GENERATING.value,
+            "stage": job.explanation_stage,
+            "message": "Explanation generation already in progress",
+            "previous_report": job.previous_explanation_result or existing_report,
+        }
     
-    # Use first scene (MVP processes single-scene videos)
-    scene_dict = all_scenes[0]
+    # If regenerating, preserve previous report
+    if request.force_regenerate and existing_report:
+        job.previous_explanation_result = existing_report
     
-    # 4. Convert to ContextualScene object
-    try:
-        from processing.context.schemas import ContextualScene
-        scene = ContextualScene.from_dict(scene_dict)
-    except Exception as e:
-        logger.error(f"Failed to parse M8 scene: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to parse M8 scene data: {str(e)}"
-        )
+    # Update status to queued
+    await job_manager.update_explanation_status(
+        job_id, ExplanationStatus.QUEUED, stage="Queued for generation"
+    )
     
-    # 5. Generate explanation via ExplanationGenerator
-    try:
-        from processing.llm.explanations import ExplanationGenerator
-        from processing.llm.client import ProviderUnavailableError, ModelNotFoundError
-        
-        generator = ExplanationGenerator()
-        explanation = await generator.explain_scene(scene)
-        
-        # Convert to dict for JSON response
-        return explanation.to_dict()
-        
-    except ProviderUnavailableError as e:
-        logger.error(f"Ollama unavailable: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail=f"LLM service unavailable: {str(e)}. Ensure Ollama is running at http://localhost:11434"
-        )
+    # Launch background task
+    asyncio.create_task(_run_explanation_background(job_id))
     
-    except ModelNotFoundError as e:
-        logger.error(f"Model not found: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail=f"Model not available: {str(e)}. Run 'ollama pull qwen3:8b' to download the model"
-        )
-    
-    except Exception as e:
-        logger.error(f"Failed to generate explanation: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate explanation: {str(e)}"
-        )
+    return {
+        "job_id": job_id,
+        "status": ExplanationStatus.QUEUED.value,
+        "stage": "Queued for generation",
+        "message": "Explanation generation started in background",
+        "previous_report": job.previous_explanation_result,
+    }
